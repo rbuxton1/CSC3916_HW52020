@@ -22,7 +22,7 @@
   "scripts": {
     "start": "yarn run build && (cd src/api && yarn start)",
     "start-client": "react-scripts start",
-    "build": "react-scripts build && (cd src/api && yarn start)",
+    "build": "react-scripts build && (cd src/api && npm install && node index.js)",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
