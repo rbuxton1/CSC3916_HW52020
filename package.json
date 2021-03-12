@@ -20,9 +20,9 @@
     "redux-thunk": "^2.3.0"
   },
   "scripts": {
-    "start": "yarn run build && (cd src/api && yarn start)",
+    "start": "cd src/api && node index.js",
     "start-client": "react-scripts start",
-    "build": "react-scripts build && (cd src/api && npm install && node index.js)",
+    "build": "react-scripts build && (cd src/api && npm install)",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
