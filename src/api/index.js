@@ -71,10 +71,63 @@ app.get("/movies", (req, res) => {
   client.connect(err => {
     if(!err){
       const movies = client.db("hw3").collection("movies");
-      movies.find().toArray((err2, arr) => {
-        if(!err2) res.send(arr);
-        else res.send(err2)
-      });
+      if(!query.reviews){
+        movies.find().toArray((err2, arr) => {
+          if(!err2) res.send(arr);
+          else res.send(err2)
+        });
+      } else {
+        movies.aggregate([
+          {
+            $lookup: {
+              from: "reviews",
+              localField: "_id",
+              foreignField: "movie",
+              as: "reviews"
+            }
+          }
+        ]).toArray((err2, arr) => {
+          if(!err2) res.send(arr);
+          else res.send(err2)
+        });
+      }
+    } else res.send(err);
+  });
+});
+
+app.get("/movies/:id", (req, res) => {
+  var {headers, query, params} = req;
+  //res.send({status: 200, message: "GET movies", headers, query, env: token});
+  client.connect(err => {
+    if(!err){
+      const movies = client.db("hw3").collection("movies");
+      if(query.reviews){
+        movies.aggregate([
+          {
+            $lookup: {
+              from: "reviews",
+              localField: "_id",
+              foreignField: "movie",
+              as: "reviews"
+            }
+          },
+          {
+            $match: {
+              _id: ObjectId(params.id)
+            }
+          }
+        ]).toArray((err2, arr) => {
+          if(!err2 && arr.length != 0) res.send(arr);
+          else if(!err2) res.send({success:false, error: "needs a real movie"});
+          else res.send(err2)
+        });
+      } else {
+        movies.find({ _id: ObjectId(params.id) }).toArray((err2, arr) => {
+          if(!err2) res.send(arr);
+          else res.send(err2)
+        });
+      }
+
     } else res.send(err);
   });
 });
@@ -124,6 +177,38 @@ app.delete("/movies", ejwt({ secret: token, algorithms: ['HS256'] }), (req, res)
       } else res.send(err);
     });
   }
+});
+
+app.get("/reviews",  (req, res) => {
+  client.connect(err => {
+    if(!err){
+      client.db("hw3").collection("reviews").find().toArray((err2, arr) => {
+        if(!err2) res.send(arr);
+        else res.send(err2)
+      });
+    } else res.send(err);
+  });
+});
+
+app.post("/review", ejwt({ secret: token, algorithms: ['HS256'] }), (req, res) => {
+  var {movie, review, rating} = req.body;
+  var {username} = req.user;
+  if(movie && review && rating){
+    client.connect(err => {
+      const movies = client.db("hw3").collection("movies");
+      const reviews = client.db("hw3").collection("reviews");
+      if(!err){
+        movies.find({ _id: ObjectId(movie) }).count().then(c => {
+          if(c > 0){
+            reviews.insertOne({movie: ObjectId(movie), username, review, rating}, (err2, insRes) => {
+              if(!err2) res.send({success: true, msg:"review added.", id: insRes.insertedId});
+              else res.send(err2);
+            });
+          } else res.send({success: false, error: "needs real movie"});
+        })
+      } else res.send(err);
+    })
+  } else res.send({success: false, error: "needs all coponents!"});
 });
 
 app.all('*', function(req, res){
