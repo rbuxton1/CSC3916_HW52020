@@ -20,7 +20,7 @@ const token = process.env.TOKEN || "somethingsomethingsuperdupertricky";
 app.use(express.static(path.join(__dirname, "..", "..", "build")));
 app.use((req, res, next) =>{
   res.sendFile(path.join(__dirname, "..", "..", "build"));
-})
+});
 
 app.post("/signup", (req, res) => {
   var {username, password} = req.body;
@@ -84,6 +84,18 @@ app.get("/movies", (req, res) => {
               localField: "_id",
               foreignField: "movie",
               as: "reviews"
+            }
+          },
+          {
+            '$addFields': {
+              'avgRating': {
+                '$avg': '$reviews.rating'
+              }
+            }
+          },
+          {
+            $sort: {
+              avgRating: -1
             }
           }
         ]).toArray((err2, arr) => {
